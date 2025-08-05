@@ -4,8 +4,13 @@ import com.euni.articlehub.dto.PostRequestDto;
 import com.euni.articlehub.dto.PostResponseDto;
 import com.euni.articlehub.service.PostService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -22,17 +27,27 @@ public class PostController {
     private final PostService postService;
 
     @Operation(
-            summary = "Get all posts",
-            description = "Retrieve a list of all posts",
+            summary = "Get paginated post list",
+            description = "Retrieve a paginated and sorted list of posts.",
+            parameters = {
+                    @Parameter(name = "page", description = "Page number (0-based)", example = "0"),
+                    @Parameter(name = "size", description = "Number of items per page", example = "10"),
+                    @Parameter(name = "sort", description = "Sorting criteria in the format: property(,asc|desc)", example = "regDate,desc")
+            },
             responses = {
-                    @ApiResponse(responseCode = "200", description = "Successfully retrieved post list"),
+                    @ApiResponse(responseCode = "200", description = "Successfully retrieved paginated post list"),
                     @ApiResponse(responseCode = "500", description = "Internal server error")
             }
     )
+//    @GetMapping
+//    public ResponseEntity<List<PostResponseDto>> getAllPosts() {
+//        List<PostResponseDto> posts = postService.getAllPosts();
+//        return ResponseEntity.ok(posts); // status 200 OK + 목록 데이터 반환
+//    }
     @GetMapping
-    public ResponseEntity<List<PostResponseDto>> getAllPosts() {
-        List<PostResponseDto> posts = postService.getAllPosts();
-        return ResponseEntity.ok(posts); // status 200 OK + 목록 데이터 반환
+    public ResponseEntity<Page<PostResponseDto>> getPosts(Pageable pageable) {
+        Page<PostResponseDto> posts = postService.getPosts(pageable);
+        return ResponseEntity.ok(posts);
     }
 
     @Operation(

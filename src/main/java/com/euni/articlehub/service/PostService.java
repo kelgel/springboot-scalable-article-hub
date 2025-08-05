@@ -8,6 +8,8 @@ import com.euni.articlehub.entity.User;
 import com.euni.articlehub.repository.PostRepository;
 import com.euni.articlehub.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,13 +37,18 @@ public class PostService {
         return postRepository.save(post);
     }
 
-    public List<PostResponseDto> getAllPosts() {
-        // 1. postRepository.findAll() 또는 isDeleted-false 조건
-        List<Post> posts = postRepository.findAllByIsDeletedFalse();
-        // 2. Post -> PostResponseDto 변환해서 반환
-        return posts.stream()
-                .map(post -> PostResponseDto.from(post))
-                .collect(Collectors.toList());
+//    public List<PostResponseDto> getAllPosts() {
+//        // 1. postRepository.findAll() 또는 isDeleted-false 조건
+//        List<Post> posts = postRepository.findAllByIsDeletedFalse();
+//        // 2. Post -> PostResponseDto 변환해서 반환
+//        return posts.stream()
+//                .map(post -> PostResponseDto.from(post))
+//                .collect(Collectors.toList());
+//    }
+
+    public Page<PostResponseDto> getPosts(Pageable pageable) {
+        Page<Post> posts = postRepository.findAllByIsDeletedFalse(pageable);
+        return posts.map(post -> PostResponseDto.from(post));
     }
 
     public PostResponseDto getPostById(Long id) {

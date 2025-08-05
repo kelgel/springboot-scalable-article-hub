@@ -4,6 +4,8 @@ import com.euni.articlehub.entity.Post;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -24,7 +26,7 @@ public class PostResponseDto {
     private String nickname;
 
     @Schema(description = "Registration date of the post", example = "2025-08-05 10:30:00")
-    private String regDate;
+    private LocalDateTime regDate;
 
 
     // Post 엔티티를 PostResponseDto로 변환하는 정적 팩토리 메서드
@@ -35,7 +37,7 @@ public class PostResponseDto {
         dto.setContent(post.getContent());
         dto.setViews(post.getViews());
         dto.setNickname(post.getUser().getNickname());
-        dto.setRegDate(post.getRegDate().toString());
+        dto.setRegDate(post.getRegDate());
         return dto;
     }
 }
