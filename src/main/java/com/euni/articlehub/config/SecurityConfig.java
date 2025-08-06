@@ -48,7 +48,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/users/signup", "/api/users/login", "/swagger-ui/**",
-                                "/swagger-ui.html", "/v3/api-docs/**"
+                                "/swagger-ui.html", "/v3/api-docs/**",
+                                "/api/index",             // ← index API 허용
+                                "/api/search/**"          // ← search API 허용
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

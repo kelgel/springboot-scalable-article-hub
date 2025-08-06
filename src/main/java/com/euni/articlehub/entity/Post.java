@@ -26,6 +26,7 @@ public class Post {
 
     private String title;
 
+    @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
 
     @Builder.Default
