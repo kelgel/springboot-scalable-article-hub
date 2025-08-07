@@ -1,5 +1,6 @@
 package com.euni.articlehub.dto;
 
+import com.euni.articlehub.document.PostDocument;
 import com.euni.articlehub.entity.Post;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
@@ -8,7 +9,9 @@ import java.time.LocalDateTime;
 
 @Getter
 @Setter
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor
 public class PostResponseDto {
     @Schema(description = "Unique identifier of the post", example = "1")
     private Long id;
@@ -39,6 +42,17 @@ public class PostResponseDto {
         dto.setNickname(post.getUser().getNickname());
         dto.setRegDate(post.getRegDate());
         return dto;
+    }
+
+    // PostDocument -> PostResponseDto
+    public static PostResponseDto fromDocument(PostDocument doc) {
+        return PostResponseDto.builder()
+                .id(Long.parseLong(doc.getId()))
+                .title(doc.getTitle())
+                .content(doc.getContent())
+                .nickname(doc.getAuthor())
+                .regDate(LocalDateTime.parse(doc.getRegDate()))
+                .build();
     }
 }
 

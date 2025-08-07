@@ -11,4 +11,9 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     List<Post> findByUserId(Long userId);
     //List<Post> findAllByIsDeletedFalse();
     Page<Post> findAllByIsDeletedFalse(Pageable pageable);
+    Page<Post> findByTitleContainingOrContentContaining(
+            String title,
+            String content,
+            Pageable pageable
+    );
 }
