@@ -33,30 +33,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                      FilterChain filterChain)
         throws ServletException, IOException {
 
+        String uri = request.getRequestURI();
+        System.out.println("Requested URI: " + uri);
+
+        // '/api/posts/search'로 시작하는 요청은 토큰 검증 없이 통과
+        if (uri.startsWith("/api/posts/search")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         // 요청 헤더에서 JWT  꺼내기
         String token = resolveToken(request);
-
-        // 토큰이 유효하다면
-//        if(token != null && jwtUtil.validateToken(token)) {
-//            //토큰에서 사용자 id 추출
-//            Long userId = jwtUtil.getUserIdFromToken(token);
-//
-//            // 사용자 정보 조회
-//            User user = userService.getUser(userId);
-//
-//            // UserDetails 생성
-//            UserDetails userDetails = org.springframework.security.core.userdetails.User
-//                    .withUsername(String.valueOf(user.getId())) // userId를 username으로 사용
-//                    .password(user.getPassword())
-//                    .authorities(user.getRole())
-//                    .build();
-//
-//            // 인증 객체 생성 및 등록
-//            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-//            SecurityContextHolder.getContext().setAuthentication(authentication);
-//        }
-//        // 다음 필터로 넘기기
-//        filterChain.doFilter(request, response);
 
         if (token != null && jwtUtil.validateToken(token)) {
             Long userId = jwtUtil.getUserIdFromToken(token);
@@ -75,7 +62,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // 핵심 코드 추가!
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }
-
 
         filterChain.doFilter(request, response);
     }

@@ -46,11 +46,17 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/posts/search/**").permitAll()
                         .requestMatchers(
-                                "/api/users/signup", "/api/users/login", "/swagger-ui/**",
-                                "/swagger-ui.html", "/v3/api-docs/**",
-                                "/api/index",             // ← index API 허용
-                                "/api/search/**"          // ← search API 허용
+                                "/api/posts/search/**",
+                                "/api/users/signup",
+                                "/api/users/login",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**",
+                                "/api/index",
+                                "/api/search/**",
+                                "/api/posts/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

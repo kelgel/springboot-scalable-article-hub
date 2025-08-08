@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Getter
 @Setter
@@ -44,17 +45,30 @@ public class PostResponseDto {
         return dto;
     }
 
-    // PostDocument -> PostResponseDto
     public static PostResponseDto fromDocument(PostDocument doc) {
+        LocalDateTime parsed = null;
+        String s = doc.getRegDate();
+        if (s != null) {
+            try {
+                // Z(UTC) 또는 오프셋이 있을 때
+                parsed = OffsetDateTime.parse(s).toLocalDateTime();
+            } catch (Exception e1) {
+                try {
+                    // 오프셋이 없고 소수점 초가 있는 ISO도 LocalDateTime.parse가 처리 가능
+                    parsed = LocalDateTime.parse(s);
+                } catch (Exception e2) {
+                    // 필요시 포맷터 추가 시도 or null 유지
+                    parsed = null;
+                }
+            }
+        }
+
         return PostResponseDto.builder()
                 .id(Long.parseLong(doc.getId()))
                 .title(doc.getTitle())
                 .content(doc.getContent())
                 .nickname(doc.getAuthor())
-                .regDate(LocalDateTime.parse(doc.getRegDate()))
+                .regDate(parsed)
                 .build();
     }
 }
-
-
-

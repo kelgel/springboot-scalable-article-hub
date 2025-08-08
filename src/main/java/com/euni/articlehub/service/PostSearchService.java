@@ -141,6 +141,7 @@ public class PostSearchService {
         } catch (IOException e) {
             throw new RuntimeException("Elasticsearch search error: " + e.getMessage());
         }
+        System.out.println(response.toString());
 
         //result -SearchResponse<PostDocument>	→ .map() 으로 DTO 변환	→ List<PostResponseDto>
         return  response.hits().hits().stream() //문서 리스트 가져오기 - List<SearchHit<PostDocument>>)
