@@ -8,12 +8,14 @@ import com.euni.articlehub.entity.User;
 import com.euni.articlehub.repository.PostRepository;
 import com.euni.articlehub.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -22,9 +24,12 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+    private final PopularityService popularityService;
 
 
     //사용자 ID 기반으로 새 글 작성
+    @Transactional
+    @CacheEvict(cacheNames = {"search:mysql", "search:es"}, allEntries = true) // 검색 캐시 전부 비우기
     public Post createPost(Long userId, PostRequestDto dto) {
         User user = userRepository.findById(userId)
                         .orElseThrow(() -> new RuntimeException("User not found"));
@@ -46,20 +51,45 @@ public class PostService {
 //                .collect(Collectors.toList());
 //    }
 
+    @Transactional(readOnly = true)
     public Page<PostResponseDto> getPosts(Pageable pageable) {
         Page<Post> posts = postRepository.findAllByIsDeletedFalse(pageable);
         return posts.map(post -> PostResponseDto.from(post));
     }
 
-    public PostResponseDto getPostById(Long id) {
+    @Transactional(readOnly = true)
+    public PostResponseDto getPostById(Long id, String viewerKey) {
         // 1. id로 게시글 조회
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Post not found"));
+
+            // 조회수/랭킹 증가 (예외 흐름과 분리: 예외 터져도 서비스 영향 최소)
+            try {
+                popularityService.recordView(id, viewerKey);
+            } catch (Exception ignore) { /* 로깅만 하고 넘어가도 OK */ }
+
         // 2. 없으면 예외, 있으면 DTO로 변환 후 반환
         return PostResponseDto.from(post);
     }
 
+    // PostSearchService 또는 별도 ReadService에 추가: ID로 게시글 요약 조회
+    public List<PostResponseDto> getTopPosts(int limit) {
+        List<Long> ids = popularityService.topPostIds(limit);
+        if (ids.isEmpty()) return List.of();
+
+        // DB에서 id 목록으로 조회 후, 입력 순서대로 정렬
+        List<Post> posts = postRepository.findAllById(ids);
+        Map<Long, Post> byId = posts.stream()
+                .collect(Collectors.toMap(Post::getId, p -> p));
+        return ids.stream()
+                .map(byId::get)
+                .filter(p -> p != null && !Boolean.TRUE.equals(p.getIsDeleted()))
+                .map(PostResponseDto::from)
+                .collect(Collectors.toList());
+    }
+
     @Transactional
+    @CacheEvict(cacheNames = {"search:mysql", "search:es"}, allEntries = true)
     public void updatePost(Long postId, PostRequestDto dto, Long userId) {
         // 1. 게시글 존재 여부 + 작성자 확인
         Post post = postRepository.findById(postId)
@@ -71,6 +101,7 @@ public class PostService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = {"search:mysql", "search:es"}, allEntries = true)
     public void deletePost(Long postId, Long userId) {
         // 1. 게시글 존재 여부 + 작성자 확인
         Post post = postRepository.findById(postId)

@@ -12,6 +12,7 @@ import com.euni.articlehub.dto.PostSearchRequestDto;
 import com.euni.articlehub.entity.Post;
 import com.euni.articlehub.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,7 +31,9 @@ public class PostSearchService {
 
     private final PostRepository postRepository;
     private final ElasticsearchClient elasticsearchClient;
+    private final PopularityService popularityService;
 
+    @Cacheable(cacheNames = "search:mysql", key = "T(com.euni.articlehub.cache.Keys).search(#requestDto)", sync = true)
     public List<PostResponseDto> searchByMySQL(PostSearchRequestDto requestDto) {
         // 1. 정렬 객체 생성
         Sort sort = Sort.by(
@@ -54,7 +58,7 @@ public class PostSearchService {
                 .map(PostResponseDto::from)
                 .collect(Collectors.toList());
     }
-
+    @Cacheable(cacheNames = "search:es", key = "T(com.euni.articlehub.cache.Keys).search(#requestDto)", sync = true)
     public List<PostResponseDto> searchByElasticsearch(PostSearchRequestDto requestDto){
         // 1. 검색 조건에 따른 Query 객체 생성
 //        MatchQuery titleMatch = new MatchQuery.Builder()

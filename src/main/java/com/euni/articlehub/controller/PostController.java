@@ -2,10 +2,12 @@ package com.euni.articlehub.controller;
 
 import com.euni.articlehub.dto.PostRequestDto;
 import com.euni.articlehub.dto.PostResponseDto;
+import com.euni.articlehub.service.PostSearchService;
 import com.euni.articlehub.service.PostService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -25,6 +27,7 @@ import java.util.Locale;
 public class PostController {
 
     private final PostService postService;
+    private final PostSearchService postSearchService;
 
     @Operation(
             summary = "Get paginated post list",
@@ -59,9 +62,30 @@ public class PostController {
             }
     )
     @GetMapping("/{id}")
-    public ResponseEntity<PostResponseDto> getPostById(@PathVariable Long id) {
-        PostResponseDto post = postService.getPostById(id);
+    public ResponseEntity<PostResponseDto> getPostById(@PathVariable Long id,
+                                                       @AuthenticationPrincipal UserDetails user,
+                                                       HttpServletRequest request) {
+        String viewerKey;
+        if (user != null && user.getUsername() != null) {
+            viewerKey = "USER_" + user.getUsername(); //로그인 유저 기준
+        } else {
+            String ip = request.getRemoteAddr(); //비로그인 IP 기준
+            String ua = request.getHeader("User-Agent"); //브라우저 포함
+            viewerKey = "GUEST_" + ip + "_" + (ua != null ? ua : "");
+        }
+
+        PostResponseDto post = postService.getPostById(id, viewerKey);
         return ResponseEntity.ok(post);
+    }
+
+    //  인기글 Top N
+    @GetMapping("/top")
+    public ResponseEntity<List<PostResponseDto>> getTopPosts(@RequestParam(defaultValue = "10") int limit) {
+        if (limit < 1) limit = 1;
+        if (limit > 50) limit = 50;
+
+        List<PostResponseDto> top = postService.getTopPosts(limit);
+        return ResponseEntity.ok(top);
     }
 
     @Operation(
