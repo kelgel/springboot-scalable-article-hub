@@ -41,6 +41,43 @@ This project aims to explore high-performance backend architecture using Spring 
 
     ✅ **Conclusion**: Elasticsearch achieved ~5x faster average response times compared to MySQL.
 
+## 🚀 Project Status – Week 3 ✅
+
+- ✅ **Redis Caching Integration**
+  - Redis container launched via **docker-compose**
+  - Integrated Redis into Spring Boot for **view count caching**
+  - Implemented scheduler to periodically flush cached deltas back to MySQL
+
+
+- ✅ **Cache Performance Testing (JMeter)**
+  - Designed tests with **100 concurrent users** and different access patterns:
+    - **Hot** (few popular articles repeatedly requested)
+    - **Random** (uniform random requests)
+    - **Zipf** (realistic skewed distribution)
+    - **Cold** (no cache preloaded) vs **Warm** (cache preloaded)
+
+
+- ✅ **Cache Hit/Miss Results**
+
+  | Scenario | Cold (Hits/Misses) | Warm (Hits/Misses) |
+    |----------|--------------------|--------------------|
+  | Hot      | 0 / 100            | 99 / 1             |
+  | Random   | 0 / 100            | 50 / 50            |
+  | Zipf     | 50 / 50            | 91 / 9             |
+
+  ✅ **Insights**
+  - Caching is most effective under **Hot access pattern** (~99% hit ratio).
+  - **Zipf distribution** also benefits strongly from caching.
+  - Random distribution shows limited caching gains, as expected.
+
+
+- ✅ **Visualization**
+
+  ![Cache Hit Ratio](docs/cache_hit_ratio.png)
+
+  *(Cache hit ratios for Hot, Random, Zipf under Cold vs Warm conditions)*
+
+
 ---
 
 ## 🛠 Tech Stack

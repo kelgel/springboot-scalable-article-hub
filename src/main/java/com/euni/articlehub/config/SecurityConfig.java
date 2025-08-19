@@ -56,7 +56,8 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/api/index",
                                 "/api/search/**",
-                                "/api/posts/**"
+                                "/api/posts/**",
+                                "/api/cache/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

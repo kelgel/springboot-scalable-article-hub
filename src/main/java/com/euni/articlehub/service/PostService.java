@@ -7,13 +7,17 @@ import com.euni.articlehub.entity.Post;
 import com.euni.articlehub.entity.User;
 import com.euni.articlehub.repository.PostRepository;
 import com.euni.articlehub.repository.UserRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -26,6 +30,13 @@ public class PostService {
     private final UserRepository userRepository;
     private final PopularityService popularityService;
 
+    private final StringRedisTemplate redis;
+    private final CacheStatsService cacheStatsService;
+    private final ObjectMapper objectMapper; // 이미 빈이 있으면 그대로 주입됨
+
+    private String detailKey(Long id) {
+        return "post:detail:" + id;
+    }
 
     //사용자 ID 기반으로 새 글 작성
     @Transactional
@@ -59,17 +70,38 @@ public class PostService {
 
     @Transactional(readOnly = true)
     public PostResponseDto getPostById(Long id, String viewerKey) {
-        // 1. id로 게시글 조회
+        // 0) 상세 캐시 조회 (DTO 캐싱)
+        String key = detailKey(id);
+        String cached = redis.opsForValue().get(key);
+        if (cached != null) {
+            cacheStatsService.incHit();
+            try {
+                return objectMapper.readValue(cached, PostResponseDto.class);
+            } catch (JsonProcessingException e) {
+                // 파싱 실패 시 캐시 무시하고 DB 조회
+            }
+        } else {
+            cacheStatsService.incMiss();
+        }
+
+        // 1) DB 조회
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Post not found"));
 
-            // 조회수/랭킹 증가 (예외 흐름과 분리: 예외 터져도 서비스 영향 최소)
-            try {
-                popularityService.recordView(id, viewerKey);
-            } catch (Exception ignore) { /* 로깅만 하고 넘어가도 OK */ }
+        // 2) 조회수/랭킹 증가 (실패해도 본문 응답에는 영향 X)
+        try {
+            popularityService.recordView(id, viewerKey);
+        } catch (Exception ignore) {}
 
-        // 2. 없으면 예외, 있으면 DTO로 변환 후 반환
-        return PostResponseDto.from(post);
+        // 3) DTO 변환
+        PostResponseDto dto = PostResponseDto.from(post);
+
+        // 4) 캐시 저장 (짧은 TTL 권장: 30초~60초)
+        try {
+            redis.opsForValue().set(key, objectMapper.writeValueAsString(dto), Duration.ofSeconds(30));
+        } catch (JsonProcessingException ignore) {}
+
+        return dto;
     }
 
     // PostSearchService 또는 별도 ReadService에 추가: ID로 게시글 요약 조회
@@ -98,6 +130,9 @@ public class PostService {
         if(!(post.getUser().getId().equals(userId))) throw new RuntimeException("Not allowed");
 
         post.update(dto.getTitle(), dto.getContent());
+
+        // 상세 캐시 무효화
+        redis.delete(detailKey(postId));
     }
 
     @Transactional
@@ -111,5 +146,8 @@ public class PostService {
         if(!(post.getUser().getId().equals(userId))) throw new RuntimeException("Not allowed");
 
         post.setIsDeleted(true); //Soft delete
+
+        // 상세 캐시 무효화
+        redis.delete(detailKey(postId));
     }
 }

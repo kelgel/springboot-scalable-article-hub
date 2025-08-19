@@ -8,18 +8,17 @@ This folder contains **JMeter test plans, results, and reports** used for perfor
 
 ```aiignore
 perf/
-├── KeywordReport_html/ # HTML report for keyword-based search performance
-├── report_compare_50/ # HTML report for MySQL vs Elasticsearch comparison (50 users)
-├── report_html/ # HTML report for general performance test
-├── Compare MySQL vs ES.jmx # JMeter test plan for DB engine comparison
 ├── keywords.csv # Test keywords dataset
+├── ids_hot.csv # Test ids dataset
+├── ids_random.csv # Test random dataset
+├── ids_zipf.csv # Test zipf dataset
+├── Compare MySQL vs ES.jmx # JMeter test plan for DB engine comparison
 ├── keywordTest.jmx # Keyword-based search performance test
-├── KeywordResult.jtl # Raw results for keyword test
 ├── perf.jmx # General performance test plan
-├── result.jtl # Raw results for perf.jmx
-├── result_compare_50.jtl # Raw results for MySQL vs ES comparison
 ├── testplan.jmx # Main performance test plan (single endpoint)
 ├── userLoads.jmx # Multi-thread-group test plan for user load scaling
+├── ArticleHub Cold.jmx # JMeter test plan for cache (cold)
+├── ArticleHub Hot.jmx # JMeter test plan for cache (hot)
 └── README.md # This documentation
 ```
 
@@ -49,6 +48,39 @@ perf/
     - One Thread Group, 50 users × 5 loops
     - Two HTTP Samplers (MySQL Search, ES Search)
     - Outputs: `result_compare_50.jtl` + `report_compare_50`
+
+---
+
+## ⚡ Cache Experiment
+
+This section contains Redis caching experiments that evaluate hit/miss ratios under different access patterns.
+
+🧪 Test Setup
+```aiignore
+Tool: JMeter 5.6
+
+Cache: Redis 7.2 (Docker)
+
+Workload: 100 requests per scenario
+
+
+Patterns Tested:
+
+  🔥 Hot (same key repeatedly)
+  
+  🎲 Random (uniform random keys)
+  
+  📊 Zipf (skewed popularity distribution)
+```
+### ✅ Key Findings
+
+Hot access quickly achieves nearly 100% hit ratio once cache is warmed.
+
+Random access benefits less from caching (≈50% hit rate).
+
+Zipf distribution shows strong cache efficiency due to skewed popularity (91% warm hit rate).
+
+Cold starts always begin with 0–50% hit ratios depending on access locality.
 
 ---
 
