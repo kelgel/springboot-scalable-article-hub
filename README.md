@@ -124,6 +124,7 @@ cd scalable-article-hub
 ./mvnw spring-boot:run
 ```
 
+```
 Swagger UI available at:
 
 👉 http://localhost:8080/swagger-ui/index.html
@@ -131,6 +132,15 @@ Swagger UI available at:
 Kibana (Elasticsearch monitoring) available at:
 
 👉 http://localhost:5601
+
+Redis (default port):
+
+👉 redis://localhost:6379
+
+RedisInsight (Redis GUI):
+
+👉 http://localhost:5540
+```
 
 ---
 
