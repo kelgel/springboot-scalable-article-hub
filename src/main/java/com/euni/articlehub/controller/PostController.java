@@ -2,6 +2,7 @@ package com.euni.articlehub.controller;
 
 import com.euni.articlehub.dto.PostRequestDto;
 import com.euni.articlehub.dto.PostResponseDto;
+import com.euni.articlehub.entity.Post;
 import com.euni.articlehub.service.PostSearchService;
 import com.euni.articlehub.service.PostService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -18,6 +19,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Locale;
 
@@ -100,11 +102,17 @@ public class PostController {
     @PostMapping
     public ResponseEntity<?> createPost(@RequestBody PostRequestDto dto,
                                         @AuthenticationPrincipal UserDetails userDetails) {
-        // Extract user ID
         Long userId = Long.parseLong(userDetails.getUsername());
-        postService.createPost(userId, dto);
-        return ResponseEntity.ok("Post successfully created");
+        Post created = postService.createPost(userId, dto); // 저장된 엔티티 반환
+
+        URI location = URI.create("/api/posts/" + created.getId());
+        return ResponseEntity
+                .created(location) // HTTP 201 + Location 헤더
+                .body(new PostCreateResponse(created.getId(), "Post successfully created"));
     }
+
+    // JSON 응답용 DTO (Java 17+ record 예시)
+    public record PostCreateResponse(Long id, String message) {}
 
     @Operation(
             summary = "Delete a post",
